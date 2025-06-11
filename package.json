@@ -3,8 +3,12 @@
   "displayName": "GCS Language",
   "description": "Syntax highlighting for GCS script files",
   "version": "0.0.1",
-  "publisher": "your-name",
+  "publisher": "Gilgamesh64",
   "main": "./extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gilgamesh64/gcs.git"
+  },
   "activationEvents": [
     "onLanguage:gcs",
     "onCommand:gcsLanguage.activate"
