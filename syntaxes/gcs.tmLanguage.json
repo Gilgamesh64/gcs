@@ -1,0 +1,27 @@
+{
+  "name": "GCS Script",
+  "scopeName": "source.gcs",
+  "fileTypes": ["gcs"],
+  "patterns": [
+    {
+      "begin": "^(MOV|ANI|WAIT|SND|DO)\\b",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.gcs"
+        }
+      },
+      "end": "$",
+      "patterns": [
+        {
+          "match": "\\b[\\w_]+\\b",
+          "name": "constant.other.gcs"
+        },
+        {
+          "match": ",",
+          "name": "punctuation.separator.gcs"
+        }
+      ]
+    }
+  ],
+  "repository": {}
+}

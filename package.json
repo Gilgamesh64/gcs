@@ -1,0 +1,45 @@
+{
+  "name": "gcs-language",
+  "displayName": "GCS Language",
+  "description": "Syntax highlighting for GCS script files",
+  "version": "0.0.1",
+  "publisher": "your-name",
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:gcs",
+    "onCommand:gcsLanguage.activate"
+  ],
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "gcs",
+        "aliases": [
+          "GCS"
+        ],
+        "extensions": [
+          ".gcs"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "gcs",
+        "scopeName": "source.gcs",
+        "path": "./syntaxes/gcs.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "gcsLanguage.activate",
+        "title": "Activate GCS Language"
+      }
+    ]
+  }
+}
