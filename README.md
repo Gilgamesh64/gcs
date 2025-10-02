@@ -56,3 +56,27 @@ A **Visual Studio Code extension** for editing **GCS scripts** with full languag
 
 All Markdown docs are located in the `docs` folder:
 
+docs/
+├─ MOV.md
+├─ MOVREL.md
+├─ ANI.md
+├─ WAIT.md
+├─ SND.md
+├─ DO.md
+├─ LISTEN.md
+├─ SKIP.md
+
+Each file contains **usage examples, parameters, and notes** for developers.
+
+---
+
+## Contributing
+
+- Add new commands or enhance documentation.  
+- Keep consistency with numeric checks, autocomplete, hover, and squiggles.
+
+---
+
+## License
+
+MIT License
