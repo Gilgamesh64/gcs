@@ -6,7 +6,7 @@ function activate(context) {
 
   const docsPath = path.join(__dirname, 'docs');
 
-  // Commands
+  // Commands / metadata used for completion and help
   const commands = [
     { label: 'MOV', detail: 'Moves the actor to absolute coordinates: `MOV x,y`' },
     { label: 'MOVREL', detail: 'Move actor relative to current position' },
@@ -33,7 +33,7 @@ function activate(context) {
     SKIP: 'Skips one frame'
   };
 
-  // Completion Provider
+  // ---------- Completion Provider ----------
   context.subscriptions.push(vscode.languages.registerCompletionItemProvider(
     { language: 'gcs' },
     {
@@ -44,57 +44,104 @@ function activate(context) {
         const commandTyped = tokens[0] ? tokens[0].toUpperCase() : '';
         const cursorIndex = position.character;
 
-        if (!commandTyped || cursorIndex <= tokens[0].length) {
+        // Suggest commands at start of line
+        if (!commandTyped || cursorIndex <= (tokens[0] ? tokens[0].length : 0)) {
           return commands.map(cmd => {
             const item = new vscode.CompletionItem(cmd.label, vscode.CompletionItemKind.Keyword);
             item.detail = cmd.detail;
             if (cmd.label === 'MOV' || cmd.label === 'MOVREL') {
               item.insertText = new vscode.SnippetString(`${cmd.label} \${1:x},\${2:y}`);
+            } else {
+              item.insertText = undefined; // soft suggestion
+              item.kind = vscode.CompletionItemKind.Text;
+              item.sortText = 'z';
             }
             return item;
           });
         }
 
+        // Suggest parameters depending on first command
         switch (commandTyped) {
           case 'MOV':
           case 'MOVREL':
-            if (tokens.length === 1) return [new vscode.CompletionItem('x,y', vscode.CompletionItemKind.Value)];
+            if (tokens.length === 1) {
+              return [new vscode.CompletionItem('x,y', vscode.CompletionItemKind.Value)];
+            }
             return [];
+
           case 'ANI':
-            if (tokens.length === 1) return animations.map(anim => new vscode.CompletionItem(anim, vscode.CompletionItemKind.Text));
+            if (tokens.length === 1) {
+              return animations.map(anim => {
+                const item = new vscode.CompletionItem(anim, vscode.CompletionItemKind.Text);
+                item.detail = 'Animation (suggestion)';
+                item.insertText = undefined;
+                item.sortText = 'z';
+                return item;
+              });
+            }
             return [];
+
           case 'SND':
-            if (tokens.length === 1) return messages.map(msg => new vscode.CompletionItem(msg, vscode.CompletionItemKind.Text));
+            if (tokens.length === 1) {
+              return messages.map(msg => {
+                const item = new vscode.CompletionItem(msg, vscode.CompletionItemKind.Text);
+                item.detail = 'Message (suggestion)';
+                item.insertText = undefined;
+                item.sortText = 'z';
+                return item;
+              });
+            }
             return [];
-          case 'LISTEN':
-            if (tokens.length === 1) return messages.map(msg => new vscode.CompletionItem(msg, vscode.CompletionItemKind.Text));
-            else if (tokens.length === 2 && !tokens[1].includes(',')) {
+
+          case 'LISTEN': {
+            if (tokens.length === 1) {
+              return messages.map(msg => {
+                const item = new vscode.CompletionItem(msg, vscode.CompletionItemKind.Text);
+                item.detail = 'Message (suggestion)';
+                item.insertText = undefined;
+                item.sortText = 'z';
+                return item;
+              });
+            } else if (tokens.length === 2 && !tokens[1].includes(',')) {
               const item = new vscode.CompletionItem('time', vscode.CompletionItemKind.Value);
               item.insertText = new vscode.SnippetString(',${1:0}');
               item.detail = 'Maximum waiting time (numeric, optional, separated by comma)';
               return [item];
             }
             return [];
+          }
+
           case 'DO':
-            if (tokens.length === 1) return scripts.map(script => new vscode.CompletionItem(script, vscode.CompletionItemKind.Text));
+            if (tokens.length === 1) {
+              return scripts.map(script => {
+                const item = new vscode.CompletionItem(script, vscode.CompletionItemKind.Text);
+                item.detail = 'Script (suggestion)';
+                item.insertText = undefined;
+                item.sortText = 'z';
+                return item;
+              });
+            }
             return [];
         }
+
         return undefined;
       }
     },
     ...[' ', ...'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), '\n']
   ));
 
-  // Hover Provider
+  // ---------- Hover Provider ----------
   context.subscriptions.push(vscode.languages.registerHoverProvider('gcs', {
     provideHover(document, position) {
-      const word = document.getText(document.getWordRangeAtPosition(position));
+      const wr = document.getWordRangeAtPosition(position);
+      if (!wr) return undefined;
+      const word = document.getText(wr).toUpperCase();
       if (docs[word]) return new vscode.Hover(new vscode.MarkdownString(docs[word]));
       return undefined;
     }
   }));
 
-  // Diagnostics
+  // ---------- Diagnostics ----------
   const diagnosticCollection = vscode.languages.createDiagnosticCollection('gcs');
   context.subscriptions.push(diagnosticCollection);
 
@@ -104,8 +151,10 @@ function activate(context) {
     const validCommands = Object.keys(docs);
 
     for (let line = 0; line < doc.lineCount; line++) {
-      const text = doc.lineAt(line).text.trim();
+      const raw = doc.lineAt(line).text;
+      const text = raw.trim();
       if (!text) continue;
+
       const parts = text.split(/\s+/);
       const command = parts[0].toUpperCase();
       const argText = text.slice(parts[0].length).trim();
@@ -122,16 +171,55 @@ function activate(context) {
       switch (command) {
         case 'MOV':
         case 'MOVREL':
-          if (!/^\d+,\d+$/.test(argText))
-            diagnostics.push(new vscode.Diagnostic(new vscode.Range(line, 0, line, text.length), `"${command}" requires two numeric parameters separated by a comma.`, vscode.DiagnosticSeverity.Error));
+          if (!/^\d+,\d+$/.test(argText)) {
+            diagnostics.push(new vscode.Diagnostic(
+              new vscode.Range(line, 0, line, raw.length),
+              `"${command}" requires two numeric parameters separated by a comma (e.g. ${command} 10,20).`,
+              vscode.DiagnosticSeverity.Error
+            ));
+          }
           break;
+
         case 'WAIT':
-          if (!/^\d+$/.test(argText))
-            diagnostics.push(new vscode.Diagnostic(new vscode.Range(line, 0, line, text.length), `"WAIT" requires one numeric parameter.`, vscode.DiagnosticSeverity.Error));
+          if (!/^\d+$/.test(argText)) {
+            diagnostics.push(new vscode.Diagnostic(
+              new vscode.Range(line, 0, line, raw.length),
+              `"WAIT" requires one numeric parameter (e.g. WAIT 5).`,
+              vscode.DiagnosticSeverity.Error
+            ));
+          }
           break;
+
         case 'LISTEN':
-          if (!/^[A-Z_]+(,\d+)?$/.test(argText))
-            diagnostics.push(new vscode.Diagnostic(new vscode.Range(line, 0, line, text.length), `"LISTEN" requires a message and optionally one numeric time parameter separated by a comma.`, vscode.DiagnosticSeverity.Error));
+          if (!/^[A-Z_]+(,\d+)?$/.test(argText)) {
+            diagnostics.push(new vscode.Diagnostic(
+              new vscode.Range(line, 0, line, raw.length),
+              `"LISTEN" requires a message and optionally one numeric time parameter separated by a comma (e.g. LISTEN HIT_EVENT,5).`,
+              vscode.DiagnosticSeverity.Error
+            ));
+          }
+          break;
+
+        case 'ANI':
+        case 'SND':
+        case 'DO':
+          if (!/^[A-Z_]+$/.test(argText)) {
+            diagnostics.push(new vscode.Diagnostic(
+              new vscode.Range(line, 0, line, raw.length),
+              `"${command}" requires exactly one identifier (no spaces, numbers, or commas).`,
+              vscode.DiagnosticSeverity.Error
+            ));
+          }
+          break;
+
+        case 'SKIP':
+          if (argText.length > 0) {
+            diagnostics.push(new vscode.Diagnostic(
+              new vscode.Range(line, parts[0].length, line, raw.length),
+              `"SKIP" does not take any parameters.`,
+              vscode.DiagnosticSeverity.Error
+            ));
+          }
           break;
       }
     }
@@ -143,40 +231,73 @@ function activate(context) {
   vscode.workspace.onDidChangeTextDocument(e => updateDiagnostics(e.document), null, context.subscriptions);
   vscode.workspace.onDidCloseTextDocument(doc => diagnosticCollection.delete(doc.uri), null, context.subscriptions);
 
-  // DocumentLink Provider (Ctrl+Click → command link)
-  context.subscriptions.push(vscode.languages.registerDocumentLinkProvider(
-    { language: 'gcs' },
-    {
-      provideDocumentLinks(document) {
-        const links = [];
-        for (let line = 0; line < document.lineCount; line++) {
-          const text = document.lineAt(line).text;
-          const match = text.match(/^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP)/);
-          if (match) {
-            const start = text.indexOf(match[1]);
-            const end = start + match[1].length;
+  // ---------- Decorations instead of DocumentLink ----------
+  const functionDecoration = vscode.window.createTextEditorDecorationType({
+    textDecoration: 'none', // no underline
+  });
 
-            // set a command: URI so no "target is missing"
-            const commandUri = vscode.Uri.parse(`command:gcs.openDoc?${encodeURIComponent(JSON.stringify([match[1]]))}`);
+  function updateFunctionDecorations(editor) {
+    if (!editor || editor.document.languageId !== 'gcs') return;
 
-            const link = new vscode.DocumentLink(new vscode.Range(line, start, line, end), commandUri);
-            link.tooltip = `Open documentation for ${match[1]}`;
-            links.push(link);
-          }
-        }
-        return links;
-      }
+    const regEx = /^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP)/gmi;
+    const text = editor.document.getText();
+    const decorations = [];
+
+    let match;
+    while ((match = regEx.exec(text))) {
+      const startPos = editor.document.positionAt(match.index);
+      const endPos = editor.document.positionAt(match.index + match[0].length);
+
+      const range = new vscode.Range(startPos, endPos);
+      const decoration = {
+        range,
+        hoverMessage: `Open docs for **${match[0].toUpperCase()}** (Ctrl+Click)`
+      };
+      decorations.push(decoration);
     }
-  ));
 
-  // Command to open Markdown preview in side view only
+    editor.setDecorations(functionDecoration, decorations);
+  }
+
+  vscode.window.onDidChangeActiveTextEditor(updateFunctionDecorations, null, context.subscriptions);
+  vscode.workspace.onDidChangeTextDocument(e => {
+    if (vscode.window.activeTextEditor && e.document === vscode.window.activeTextEditor.document) {
+      updateFunctionDecorations(vscode.window.activeTextEditor);
+    }
+  }, null, context.subscriptions);
+
+  if (vscode.window.activeTextEditor) {
+    updateFunctionDecorations(vscode.window.activeTextEditor);
+  }
+
+  // ---------- Command to open docs ----------
   context.subscriptions.push(vscode.commands.registerCommand('gcs.openDoc', (cmd) => {
+    if (!cmd) return;
     const mdPath = path.join(docsPath, `${cmd}.md`);
     const mdUri = vscode.Uri.file(mdPath);
-
-    // Open preview only
     vscode.commands.executeCommand('markdown.showPreviewToSide', mdUri);
   }));
+
+  // ---------- Intercept Ctrl+Click ----------
+  vscode.window.onDidChangeTextEditorSelection(e => {
+    const editor = e.textEditor;
+    if (!editor || editor.document.languageId !== 'gcs') return;
+    if (!e.kind || e.kind !== vscode.TextEditorSelectionChangeKind.Mouse) return;
+
+    if (e.selections.length > 0 && e.selections[0].isEmpty) {
+      const position = e.selections[0].active;
+      const wordRange = editor.document.getWordRangeAtPosition(position, /^[A-Z]+/i);
+      if (!wordRange) return;
+
+      const word = editor.document.getText(wordRange).toUpperCase();
+      if (docs[word]) {
+        // Only trigger if Ctrl (or Cmd on Mac) is pressed
+        if (process.platform === 'darwin' ? e.selections[0].isEmpty : e.selections[0].isEmpty) {
+          vscode.commands.executeCommand('gcs.openDoc', word);
+        }
+      }
+    }
+  });
 }
 
 function deactivate() {}
