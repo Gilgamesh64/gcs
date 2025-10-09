@@ -6,14 +6,16 @@
     {
       "begin": "^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP)\\b",
       "beginCaptures": {
-        "1": {
-          "name": "keyword.control.gcs"
-        }
+        "1": { "name": "keyword.control.gcs" }
       },
       "end": "$",
       "patterns": [
         {
-          "match": "\\b[\\w_]+\\b",
+          "match": "-?\\b\\d+(?:\\.\\d+)?\\b",
+          "name": "constant.other.gcs"
+        },
+        {
+          "match": "\\b[A-Z_][A-Z0-9_]*\\b",
           "name": "constant.other.gcs"
         },
         {
@@ -23,5 +25,6 @@
       ]
     }
   ],
-  "repository": {}
+  "repository": {},
+  "uuid": "b1b8c4e4-22b3-46ce-9f90-6ac8e3a01729"
 }

@@ -168,20 +168,23 @@ function activate(context) {
         continue;
       }
 
+      // parameter validation per-command
       switch (command) {
         case 'MOV':
         case 'MOVREL':
-          if (!/^\d+,\d+$/.test(argText)) {
+          // allow optional minus signs, optional spaces around comma
+          if (!/^-?\d+\s*,\s*-?\d+$/.test(argText)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(line, 0, line, raw.length),
-              `"${command}" requires two numeric parameters separated by a comma (e.g. ${command} 10,20).`,
+              `"${command}" requires two numeric parameters separated by a comma (e.g. ${command} 10,20 or ${command} -5, 15).`,
               vscode.DiagnosticSeverity.Error
             ));
           }
           break;
 
         case 'WAIT':
-          if (!/^\d+$/.test(argText)) {
+          // allow integer or float numbers, optional spaces
+          if (!/^\s*\d+(\.\d+)?\s*$/.test(argText)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(line, 0, line, raw.length),
               `"WAIT" requires one numeric parameter (e.g. WAIT 5).`,
@@ -191,7 +194,8 @@ function activate(context) {
           break;
 
         case 'LISTEN':
-          if (!/^[A-Z_]+(,\d+)?$/.test(argText)) {
+          // message [,time] — allow digits, underscores, optional spaces
+          if (!/^[A-Z_0-9]+(\s*,\s*\d+)?$/.test(argText)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(line, 0, line, raw.length),
               `"LISTEN" requires a message and optionally one numeric time parameter separated by a comma (e.g. LISTEN HIT_EVENT,5).`,
@@ -203,17 +207,18 @@ function activate(context) {
         case 'ANI':
         case 'SND':
         case 'DO':
-          if (!/^[A-Z_]+$/.test(argText)) {
+          // allow underscores, letters, and digits
+          if (!/^[A-Z_0-9]+$/.test(argText)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(line, 0, line, raw.length),
-              `"${command}" requires exactly one identifier (no spaces, numbers, or commas).`,
+              `"${command}" requires exactly one identifier (letters, digits, and underscores only).`,
               vscode.DiagnosticSeverity.Error
             ));
           }
           break;
 
         case 'SKIP':
-          if (argText.length > 0) {
+          if (argText.trim().length > 0) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(line, parts[0].length, line, raw.length),
               `"SKIP" does not take any parameters.`,
@@ -300,6 +305,6 @@ function activate(context) {
   });
 }
 
-function deactivate() {}
+function deactivate() { }
 
 module.exports = { activate, deactivate };
