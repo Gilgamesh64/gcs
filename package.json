@@ -2,7 +2,7 @@
   "name": "gcs-language",
   "displayName": "GCS Language",
   "description": "Syntax highlighting for Garbage Collector Scripts script files",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "Gilgamesh64",
   "main": "./extension.js",
   "repository": {
