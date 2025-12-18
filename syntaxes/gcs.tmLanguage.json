@@ -4,7 +4,7 @@
   "fileTypes": ["gcs"],
   "patterns": [
     {
-      "begin": "^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP)\\b",
+      "begin": "^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP|TELL)\\b",
       "beginCaptures": {
         "1": { "name": "keyword.control.gcs" }
       },
@@ -12,7 +12,7 @@
       "patterns": [
         {
           "match": "-?\\b\\d+(?:\\.\\d+)?\\b",
-          "name": "constant.other.gcs"
+          "name": "constant.numeric.gcs"
         },
         {
           "match": "\\b[A-Z_][A-Z0-9_]*\\b",
@@ -21,6 +21,19 @@
         {
           "match": ",",
           "name": "punctuation.separator.gcs"
+        }
+      ]
+    },
+    {
+      "begin": "^(SAY)\\b",
+      "beginCaptures": {
+        "1": { "name": "keyword.control.gcs" }
+      },
+      "end": "$",
+      "patterns": [
+        {
+          "match": "\".*\"",
+          "name": "string.quoted.double.gcs"
         }
       ]
     }

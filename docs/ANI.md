@@ -11,7 +11,7 @@ Changes the **current animation** of the actor.
 
 **Notes:**
 - Only **one parameter** is allowed.  
-- Autocomplete will suggest examples animations, they may not exist.  
+- Autocomplete will suggest example animations, they may not exist.  
 - Using an unknown animation name will not trigger red squiggles, but may cause runtime errors if the resource does not exist.
 
 **Example:**

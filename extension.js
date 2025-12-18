@@ -9,28 +9,33 @@ function activate(context) {
   // Commands / metadata used for completion and help
   const commands = [
     { label: 'MOV', detail: 'Moves the actor to absolute coordinates: `MOV x,y`' },
-    { label: 'MOVREL', detail: 'Move actor relative to current position' },
-    { label: 'ANI', detail: 'Changes the current animation' },
-    { label: 'WAIT', detail: 'Pauses execution for given amount of seconds' },
-    { label: 'SND', detail: 'Sends one message to the Stage MessageDispatcher' },
-    { label: 'DO', detail: 'Executes another script' },
-    { label: 'LISTEN', detail: 'Awaits for a message and then proceeds (optional maximum waiting time, separated by comma)' },
-    { label: 'SKIP', detail: 'Skips one frame' }
+    { label: 'MOVREL', detail: 'Move actor relative to current position: `MOVREL x,y`' },
+    { label: 'ANI', detail: 'Changes the current animation: `ANI JUMP`' },
+    { label: 'WAIT', detail: 'Pauses execution for given amount of seconds: `WAIT 1`' },
+    { label: 'SND', detail: 'Sends one message to the Stage MessageDispatcher: `SND OK`' },
+    { label: 'DO', detail: 'Executes another script: `DO SCRIPT_2`' },
+    { label: 'LISTEN', detail: 'Awaits for a message and then proceeds (optional maximum waiting time, separated by comma): `LISTEN OK,10`' },
+    { label: 'SKIP', detail: 'Skips one frame: `SKIP`' },
+    { label: 'TELL', detail: 'Tells a story: `TELL STORY_NAME`' },
+    { label: 'SAY', detail: 'Says a line of dialogue: `SAY "Your text here"`' } // Added SAY
   ];
 
   const animations = ['IDLE', 'WALK', 'ATTACK'];
   const messages = ['HIT_EVENT', 'ATTACK', 'END_SCENE'];
   const scripts = ['INTRO', 'CUTSCENE1', 'BOSS_BATTLE'];
+  const stories = ['INTRO', 'CHAPTER1', 'ENDING']; // Example stories
 
   const docs = {
     MOV: 'Moves the actor to absolute coordinates: `MOV x,y`',
-    MOVREL: 'Moves the actor relative to current position',
-    ANI: 'Changes the current animation',
-    WAIT: 'Pauses execution for given amount of seconds',
-    SND: 'Sends one message to the Stage MessageDispatcher',
-    DO: 'Executes another script',
-    LISTEN: 'Awaits for a message and then proceeds (optional maximum waiting time, separated by comma)',
-    SKIP: 'Skips one frame'
+    MOVREL: 'Move actor relative to current position: `MOVREL x,y`',
+    ANI: 'Changes the current animation: `ANI JUMP`',
+    WAIT: 'Pauses execution for given amount of seconds: `WAIT 1`',
+    SND: 'Sends one message to the Stage MessageDispatcher: `SND OK`',
+    DO: 'Executes another script: `DO SCRIPT_2`',
+    LISTEN: 'Awaits for a message and then proceeds (optional maximum waiting time, separated by comma): `LISTEN OK,10`',
+    SKIP: 'Skips one frame: `SKIP`',
+    TELL: 'Tells a story: `TELL STORY_NAME`',
+    SAY: 'Says a line of dialogue: `SAY "Your text here"`'
   };
 
   // ---------- Completion Provider ----------
@@ -51,6 +56,8 @@ function activate(context) {
             item.detail = cmd.detail;
             if (cmd.label === 'MOV' || cmd.label === 'MOVREL') {
               item.insertText = new vscode.SnippetString(`${cmd.label} \${1:x},\${2:y}`);
+            } else if (cmd.label === 'SAY') {
+              item.insertText = new vscode.SnippetString('SAY "${1:Your text here}"');
             } else {
               item.insertText = undefined; // soft suggestion
               item.kind = vscode.CompletionItemKind.Text;
@@ -64,9 +71,7 @@ function activate(context) {
         switch (commandTyped) {
           case 'MOV':
           case 'MOVREL':
-            if (tokens.length === 1) {
-              return [new vscode.CompletionItem('x,y', vscode.CompletionItemKind.Value)];
-            }
+            if (tokens.length === 1) return [new vscode.CompletionItem('x,y', vscode.CompletionItemKind.Value)];
             return [];
 
           case 'ANI':
@@ -93,7 +98,7 @@ function activate(context) {
             }
             return [];
 
-          case 'LISTEN': {
+          case 'LISTEN':
             if (tokens.length === 1) {
               return messages.map(msg => {
                 const item = new vscode.CompletionItem(msg, vscode.CompletionItemKind.Text);
@@ -109,7 +114,6 @@ function activate(context) {
               return [item];
             }
             return [];
-          }
 
           case 'DO':
             if (tokens.length === 1) {
@@ -120,6 +124,27 @@ function activate(context) {
                 item.sortText = 'z';
                 return item;
               });
+            }
+            return [];
+
+          case 'TELL':
+            if (tokens.length === 1) {
+              return stories.map(story => {
+                const item = new vscode.CompletionItem(story, vscode.CompletionItemKind.Text);
+                item.detail = 'Story name (suggestion)';
+                item.insertText = undefined;
+                item.sortText = 'z';
+                return item;
+              });
+            }
+            return [];
+
+          case 'SAY':
+            if (tokens.length === 1) {
+              const item = new vscode.CompletionItem('text', vscode.CompletionItemKind.Snippet);
+              item.insertText = new vscode.SnippetString('SAY "${1:Your text here}"');
+              item.detail = 'Insert dialogue text';
+              return [item];
             }
             return [];
         }
@@ -168,11 +193,9 @@ function activate(context) {
         continue;
       }
 
-      // parameter validation per-command
       switch (command) {
         case 'MOV':
         case 'MOVREL':
-          // allow optional minus signs, optional spaces around comma
           if (!/^-?\d+\s*,\s*-?\d+$/.test(argText)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(line, 0, line, raw.length),
@@ -183,7 +206,6 @@ function activate(context) {
           break;
 
         case 'WAIT':
-          // allow integer or float numbers, optional spaces
           if (!/^\s*\d+(\.\d+)?\s*$/.test(argText)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(line, 0, line, raw.length),
@@ -194,7 +216,6 @@ function activate(context) {
           break;
 
         case 'LISTEN':
-          // message [,time] — allow digits, underscores, optional spaces
           if (!/^[A-Z_0-9]+(\s*,\s*\d+)?$/.test(argText)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(line, 0, line, raw.length),
@@ -207,11 +228,30 @@ function activate(context) {
         case 'ANI':
         case 'SND':
         case 'DO':
-          // allow underscores, letters, and digits
           if (!/^[A-Z_0-9]+$/.test(argText)) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(line, 0, line, raw.length),
               `"${command}" requires exactly one identifier (letters, digits, and underscores only).`,
+              vscode.DiagnosticSeverity.Error
+            ));
+          }
+          break;
+
+        case 'TELL':
+          if (!/^[A-Z_][A-Z0-9_]*$/.test(argText)) {
+            diagnostics.push(new vscode.Diagnostic(
+              new vscode.Range(line, 0, line, raw.length),
+              `"TELL" requires exactly one STORY identifier (letters, digits, and underscores only).`,
+              vscode.DiagnosticSeverity.Error
+            ));
+          }
+          break;
+
+        case 'SAY':
+          if (!/^".*"$/.test(argText)) {
+            diagnostics.push(new vscode.Diagnostic(
+              new vscode.Range(line, 0, line, raw.length),
+              `"SAY" requires a string parameter enclosed in double quotes (e.g. SAY "Hello world").`,
               vscode.DiagnosticSeverity.Error
             ));
           }
@@ -236,15 +276,13 @@ function activate(context) {
   vscode.workspace.onDidChangeTextDocument(e => updateDiagnostics(e.document), null, context.subscriptions);
   vscode.workspace.onDidCloseTextDocument(doc => diagnosticCollection.delete(doc.uri), null, context.subscriptions);
 
-  // ---------- Decorations instead of DocumentLink ----------
-  const functionDecoration = vscode.window.createTextEditorDecorationType({
-    textDecoration: 'none', // no underline
-  });
+  // ---------- Decorations ----------
+  const functionDecoration = vscode.window.createTextEditorDecorationType({ textDecoration: 'none' });
 
   function updateFunctionDecorations(editor) {
     if (!editor || editor.document.languageId !== 'gcs') return;
 
-    const regEx = /^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP)/gmi;
+    const regEx = /^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP|TELL|SAY)/gmi;
     const text = editor.document.getText();
     const decorations = [];
 
@@ -252,13 +290,10 @@ function activate(context) {
     while ((match = regEx.exec(text))) {
       const startPos = editor.document.positionAt(match.index);
       const endPos = editor.document.positionAt(match.index + match[0].length);
-
-      const range = new vscode.Range(startPos, endPos);
-      const decoration = {
-        range,
+      decorations.push({
+        range: new vscode.Range(startPos, endPos),
         hoverMessage: `Open docs for **${match[0].toUpperCase()}** (Ctrl+Click)`
-      };
-      decorations.push(decoration);
+      });
     }
 
     editor.setDecorations(functionDecoration, decorations);
@@ -271,9 +306,7 @@ function activate(context) {
     }
   }, null, context.subscriptions);
 
-  if (vscode.window.activeTextEditor) {
-    updateFunctionDecorations(vscode.window.activeTextEditor);
-  }
+  if (vscode.window.activeTextEditor) updateFunctionDecorations(vscode.window.activeTextEditor);
 
   // ---------- Command to open docs ----------
   context.subscriptions.push(vscode.commands.registerCommand('gcs.openDoc', (cmd) => {
@@ -296,10 +329,7 @@ function activate(context) {
 
       const word = editor.document.getText(wordRange).toUpperCase();
       if (docs[word]) {
-        // Only trigger if Ctrl (or Cmd on Mac) is pressed
-        if (process.platform === 'darwin' ? e.selections[0].isEmpty : e.selections[0].isEmpty) {
-          vscode.commands.executeCommand('gcs.openDoc', word);
-        }
+        vscode.commands.executeCommand('gcs.openDoc', word);
       }
     }
   });
