@@ -45,5 +45,6 @@
         "title": "Activate GCS Language"
       }
     ]
-  }
+  },
+  "icon": "images/icon.png"
 }
