@@ -7,7 +7,7 @@ ANI animation
 Changes the **current animation** of the actor.
 
 **Parameters:**
-- `animation` – the animation resource enum (e.g., `IDLE`, `WALK`, `ATTACK`)  
+- `ANIMATION` – the animation resource enum (e.g., `IDLE`, `WALK`, `ATTACK`)  
 
 **Notes:**
 - Only **one parameter** is allowed.  
