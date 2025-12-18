@@ -4,6 +4,7 @@
   "description": "Syntax highlighting for Garbage Collector Scripts script files",
   "version": "0.0.10",
   "publisher": "Gilgamesh64",
+  "icon": "images/icon.png",
   "main": "./extension.js",
   "repository": {
     "type": "git",
@@ -45,6 +46,5 @@
         "title": "Activate GCS Language"
       }
     ]
-  },
-  "icon": "images/icon.png"
+  }
 }

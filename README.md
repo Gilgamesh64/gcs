@@ -29,6 +29,8 @@ A **Visual Studio Code extension** for editing **GCS scripts** with full languag
 | `DO` | Executes another script | [DO.md](docs/DO.md) |
 | `LISTEN` | Waits for a message with optional timeout | [LISTEN.md](docs/LISTEN.md) |
 | `SKIP` | Skips one frame | [SKIP.md](docs/SKIP.md) |
+| `TELL` | Tells a story | [TELL.md](docs/TELL.md) |
+| `SAY` | Says something | [SAY.md](docs/SAY.md) |
 
 > Click any link to open the full documentation in VS Code.
 
