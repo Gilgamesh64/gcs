@@ -4,7 +4,7 @@
   "fileTypes": ["gcs"],
   "patterns": [
     {
-      "begin": "^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP|TELL)\\b",
+      "begin": "^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP|TELL|SAY|REMOVE)\\b",
       "beginCaptures": {
         "1": { "name": "keyword.control.gcs" }
       },

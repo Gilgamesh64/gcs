@@ -17,7 +17,8 @@ function activate(context) {
     { label: 'LISTEN', detail: 'Awaits for a message and then proceeds (optional maximum waiting time, separated by comma): `LISTEN OK,10`' },
     { label: 'SKIP', detail: 'Skips one frame: `SKIP`' },
     { label: 'TELL', detail: 'Tells a story: `TELL STORY_NAME`' },
-    { label: 'SAY', detail: 'Says a line of dialogue: `SAY "Your text here"`' } // Added SAY
+    { label: 'SAY', detail: 'Says a line of dialogue: `SAY "Your text here"`' },
+    { label: 'REMOVE', detail: 'Removes the actor"`' }
   ];
 
   const animations = ['IDLE', 'WALK', 'ATTACK'];
@@ -35,7 +36,8 @@ function activate(context) {
     LISTEN: 'Awaits for a message and then proceeds (optional maximum waiting time, separated by comma): `LISTEN OK,10`',
     SKIP: 'Skips one frame: `SKIP`',
     TELL: 'Tells a story: `TELL STORY_NAME`',
-    SAY: 'Says a line of dialogue: `SAY "Your text here"`'
+    SAY: 'Says a line of dialogue: `SAY "Your text here"`',
+    REMOVE: 'Permanently removes the actor"`'
   };
 
   // ---------- Completion Provider ----------
@@ -257,11 +259,12 @@ function activate(context) {
           }
           break;
 
+        case 'REMOVE':
         case 'SKIP':
           if (argText.trim().length > 0) {
             diagnostics.push(new vscode.Diagnostic(
               new vscode.Range(line, parts[0].length, line, raw.length),
-              `"SKIP" does not take any parameters.`,
+              `No parameters needed`,
               vscode.DiagnosticSeverity.Error
             ));
           }
@@ -282,7 +285,7 @@ function activate(context) {
   function updateFunctionDecorations(editor) {
     if (!editor || editor.document.languageId !== 'gcs') return;
 
-    const regEx = /^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP|TELL|SAY)/gmi;
+    const regEx = /^(MOV|MOVREL|ANI|WAIT|SND|DO|LISTEN|SKIP|TELL|SAY|REMOVE)/gmi;
     const text = editor.document.getText();
     const decorations = [];
 
